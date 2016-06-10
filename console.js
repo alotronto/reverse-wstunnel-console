@@ -44,6 +44,25 @@ process.stdin.on('readable', function() {
       //check if the command is without paramiters
       if(splittedChunk.length > 1){
         switch (splittedChunk[0]) {
+          case 'rm':
+            switch (splittedChunk[1]) {
+              case '?':
+                help.rmCommand();
+                break;
+              case 'client':
+                if(splittedChunk[2] === '-name' && splittedChunk[3] != null && splittedChunk[3] != ''){
+                  removeCSObject('client',splittedChunk[3]);
+                 }
+                break;
+              case 'server':
+                if(splittedChunk[2] === '-name' && splittedChunk[3] != null && splittedChunk[3] != ''){
+                  removeCSObject('server',splittedChunk[3]);
+                 }
+                break;
+              default:
+              errors.syntax();
+            }
+            break;
           case 'new':
           switch (splittedChunk[1]) {
             case '?':
@@ -52,7 +71,8 @@ process.stdin.on('readable', function() {
               break;
             case 'client':
               if(splittedChunk[2] === '-name' && splittedChunk[3] != null && splittedChunk[3] != ''){
-                addClient(splittedChunk[3]);
+                //addClient(splittedChunk[3]);
+                addCSObject('client',splittedChunk[3]);
               }
               else{
                 errors.syntax();
@@ -60,7 +80,8 @@ process.stdin.on('readable', function() {
               break;
             case 'server':
               if(splittedChunk[2] === '-name' && splittedChunk[3] != null && splittedChunk[3] != ''){
-                addServer(splittedChunk[3]);                
+                //addServer(splittedChunk[3]);
+                addCSObject('server',splittedChunk[3]);
               }
               else{
                 errors.syntax();
@@ -77,7 +98,7 @@ process.stdin.on('readable', function() {
                 break;
               case 'client':
                 showList('client');
-                break
+                break;
               case 'server':
                 showList('server');
                 break;
@@ -88,6 +109,24 @@ process.stdin.on('readable', function() {
                 errors.syntax();
             }
             break;
+          case 'start':
+            switch (splittedChunk[1]) {
+              case '?':
+                help.startCommand();
+              break;
+              case 'client':
+                if(checkStartClientCommand(splittedChunk)){
+                  startClient(splittedChunk[3],splittedChunk[9],splittedChunk[7],splittedChunk[5]);
+                }
+                else{
+                  errors.syntax();
+                }
+              break;
+              default:
+                errors.syntax();
+            }
+          break;
+          
           default:
             errors.wrongCommand();
         }
@@ -105,15 +144,18 @@ process.stdin.on('readable', function() {
           case 'help':
             help.main();
             break;
-          
           case 'new':
             errors.syntax();
             break;
-            
+          case 'rm':
+            errors.syntax();
+            break;
           case 'show':
             errors.syntax();
             break;
-          
+          case 'start':
+            errors.syntax();
+            break;
           default:
             errors.wrongCommand();
         }
@@ -122,6 +164,110 @@ process.stdin.on('readable', function() {
     //Show default wrt-c prompt
     process.stdout.write('wrt-c %:');
 });
+
+/**
+ *ADDS A NEW CLIENT OBJ INTO ARRAY OF CLIENT OBJECTS 
+ **/
+ 
+/*function addClient(clientName){
+  //NEW INSTANCE OF wts.client_reverse();
+  var reverseClient = new wts.client_reverse();
+  var nameIsPresent = false;
+  
+  if(clients.length > 0){
+    clients.forEach(function(obj) {
+      if(obj.name == clientName)
+        nameIsPresent = true;
+    })
+  }
+  if(!nameIsPresent){
+    //PUSH OBJECT FOR THE NEW INSTANCE OF REVERSE CLIENT
+    clients.push( { name: clientName, revCli: reverseClient } );
+    console.log('A new reverse client with name: '+ clientName + ' is created ;)');
+  }
+  else{
+    console.log('A new reverse client with name: '+ clientName + ' is not created');
+    console.log('the name you have inserted is just present :(');
+    console.log('Try again with a new name');
+  }
+}*/
+
+/**
+ *ADDS A NEW SERVER OBJ INTO ARRAY OF SERVER OBJECTS 
+ **/
+
+/*function addServer(serverName){
+  //NEW INSTANCE OF wts.server_reverse();
+  var reverseServer = new wts.server_reverse();
+  //PUSH OBJECT FOR THE NEW INSTANCE OF REVERSE SERVER 
+  servers.push( { name: serverName, revServ: reverseServer } );
+  console.log('A new reverse server with name:'+ serverName + 'is created ;)');
+}*/
+
+/**
+ *THE FUCNTION IS USED TO ADD A NEW CLIENT OR SERVER OBJECT INTO THE 
+ *SPECIFIC ARRAY OF OBJECTS  
+ **/
+
+function addCSObject(type, name){
+  //NEW INSTANCE OF wts.client_reverse();
+  //var reverseClient = new wts.client_reverse();
+  var nameIsPresent = checkName(type,name);
+  
+  if(!nameIsPresent){
+    //PUSH OBJECT FOR THE NEW INSTANCE OF REVERSE CLIENT
+    if(type === 'client'){
+      var reverseClient = new wts.client_reverse;
+      clients.push( { name: name, revCli: reverseClient } );
+      console.log('A new reverse client with name: '+ name + ' is created ;)');
+    }
+    else{
+      var reverseServer = new wts.server_reverse;
+      servers.push( { name: name, revCli: reverseServer } );
+      console.log('A new reverse server with name: '+ name + ' is created ;)');
+    }
+  }
+  else{
+    console.log('A new reverse '+type+' with name: '+ name + ' is not created');
+    console.log('the name you have inserted is just present :(');
+    console.log('Try again with a new name');
+  }
+}
+
+/**
+ *THE FUCNTION IS USED TO REMOVE A CLIENT OR SERVER OBJECT FROM THE 
+ *SPECIFIC ARRAY OF OBJECTS  
+ **/
+function removeCSObject(type, name){
+  var nameIsPresent = checkName(type,name);
+  if(nameIsPresent){
+    if(type === 'client'){
+      var index;
+      clients.some(function(entry, i) {
+        if (entry.name === name) {
+          index = i;
+          return true;
+        }
+      });
+      clients.splice(index, 1); 
+      console.log('The reverse client with name: '+ name + ' is removed ;)');
+    }
+    else{
+      var index;
+      servers.some(function(entry, i) {
+      if (entry.name === name) {
+          index = i;
+          return true;
+        }
+      });
+      servers.splice(index, 1); 
+      console.log('The reverse server with name: '+ name + ' is removed ;)');
+    }
+  }
+  else{
+    console.log('There is no '+type+' with the inserted name');
+  }
+}
 
 
 /**
@@ -135,7 +281,7 @@ function showList(command){
       console.log('List of clients:');
       if(clients.length > 0)
         clients.forEach(function(obj){
-          console.log(obj.nome);
+          console.log(obj.name);
         });
       else
         console.log('There are not clients');
@@ -146,19 +292,18 @@ function showList(command){
       console.log('List of servers:');
       if(servers.length > 0)
         servers.forEach(function(obj){
-          console.log(obj.nome);
+          console.log(obj.name);
         });
       else
         console.log('There are not servers');
       console.log('');
       break;
     case 'all':
-
       console.log('');
       console.log('List of clients:');
       if(clients.length > 0)
         clients.forEach(function(obj){
-          console.log(obj.nome);
+          console.log(obj.name);
         });
       else
         console.log('There are not clients');
@@ -167,7 +312,7 @@ function showList(command){
       console.log('List of servers:');
       if(servers.length > 0)
         servers.forEach(function(obj) {
-          console.log(obj.nome);  
+          console.log(obj.name);  
         });
       else
         console.log('There are not servers');
@@ -178,27 +323,61 @@ function showList(command){
   }
 }
 
-/**
- *ADDS A NEW CLIENT OBJ INTO ARRAY OF CLIENT OBJECTS 
- **/
-function addClient(clientName){
-  //NEW INSTANCE OF wts.client_reverse();
-  var reverseClient = new wts.client_reverse();
-  //PUSH OBJECT FOR THE NEW INSTANCE OF REVERSE CLIENT
-  clients.push( { nome: clientName, revCli: reverseClient } );
-  console.log('A new reverse client with name: '+ clientName + 'is created ;)');
+
+function startClient(clientName, serverIp, remotePort, localPort){
+  if(checkName('client',clientName)){
+    clients.forEach(function(obj) {
+      if(obj.name === clientName){
+        console.log('true');
+        obj.revCli.start(remotePort,serverIp,localPort);
+      }
+    });
+  }
+  else{
+    console.log('ERRORE');
+  }
 }
 
+
 /**
- *ADDS A NEW SERVER OBJ INTO ARRAY OF SERVER OBJECTS 
+ *UTILITY FUNCTION 
+ * THE FUNCTION RETURNS TRUE IF THE INSERTED IS PRESENT IN THE SERVERS/CLIENTS
+ * ARRAY OF OBJECTS
  **/
-function addServer(serverName){
-  //NEW INSTANCE OF wts.server_reverse();
-  var reverseServer = new wts.server_reverse();
-  //PUSH OBJECT FOR THE NEW INSTANCE OF REVERSE SERVER 
-  servers.push( { nome: serverName, revServ: reverseServer } );
-  console.log('A new reverse server with name:'+ serverName + 'is created ;)');
+function checkName(type, name){
+   var nameIsPresent = false;
+  if(type === 'client'){
+    if(clients.length > 0){
+      clients.forEach(function(obj) {
+        if(obj.name == name)
+          nameIsPresent = true;
+      });
+    }
+  }
+  else{
+    if(servers.length > 0){
+      servers.forEach(function(obj) {
+        if(obj.name == name)
+          nameIsPresent = true;
+      });
+    }
+  }
+  return nameIsPresent;
 }
 
-function startClient(serverIp, remotePort, localPort){
+function checkStartClientCommand(splitArray){
+  var isCorrect = false;
+  if(splitArray[2] === '-name' && 
+      splitArray[3] != null && splitArray[3] != '' &&
+      splitArray[4] == '-lport' &&
+      splitArray[5] != null && splitArray[5] != '' && !isNaN(splitArray[5]) &&
+      splitArray[6] == '-rport' &&
+      splitArray[7] != null && splitArray[7] != '' && !isNaN(splitArray[7]) &&
+      splitArray[8] == '-swHost' &&
+      splitArray[9].split(':').length == 3
+      )
+      isCorrect = true;
+  
+  return isCorrect;    
+
 }
